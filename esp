@@ -189,7 +189,7 @@ end)
 
 for _, plot in pairs(Workspace.Plots:GetChildren()) do
 	plot.ChildAdded:Connect(function()
-		task.wait(1)
+		task.wait(0.1)
 		processPlots()
 	end)
 end

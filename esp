@@ -1,6 +1,6 @@
--- 🌿 ESP Aura + Beam + Overhead hiển thị DisplayName + Generation + Floor (auto update)
--- ⚙️ By PhatLee (custom version)
--- ✅ Cập nhật liên tục 0.1s, lọc >10M/s, bỏ qua model/friendpanel, bỏ qua plot chứa từ khóa, bỏ qua generation cho model đặc biệt
+-- 🌿 ESP Aura + Beam + Overhead hiển thị DisplayName + Generation
+-- ⚙️ By PhatLee (custom version cho bạn)
+-- ✅ Lọc >10M/s, bỏ qua model/friendpanel, bỏ qua plot chứa từ khóa nhất định (đa ngôn ngữ)
 
 local Workspace = game:GetService("Workspace")
 local Players = game:GetService("Players")
@@ -9,21 +9,16 @@ local LocalPlayer = Players.LocalPlayer
 -- 💡 Cấu hình màu
 local AURA_COLOR = Color3.fromRGB(0, 255, 100)
 
--- ⚙️ Danh sách từ khóa bị chặn
+-- ⚙️ Danh sách từ khóa bị chặn (tự động bỏ qua plot nếu TextLabel chứa 1 trong các từ này)
 local BLOCKED_KEYWORDS = {
-	"sweet",
-	"datqitprosunshine",
-	"hiepga",
+	"sweet",    -- ví dụ: Sweet's Base / Sweetの庭 / Cơ sở Sweet
+	"datqitprosunshine",     -- ví dụ: Noob's Garden
+	"hiepga_001", 
+	"phatgie", 
+	"anhdayquaskibidi", 
 }
 
--- ⚙️ Danh sách model luôn ESP (bỏ qua condition generation)
-local ALWAYS_ESP_MODELS = {
-	"67",
-	"Pot Hotspot",
-	-- thêm tên model muốn bỏ qua generation ở đây
-}
-
--- 🧩 Hàm chuyển "10K/s", "3.2M/s", "1B/s" thành số
+-- 🧩 Hàm chuyển "10K/s", "3.2M/s", "1B/s" thành số thực
 local function parseGeneration(text)
 	if not text or type(text) ~= "string" then return 0 end
 	text = text:upper():gsub("/S", "")
@@ -38,23 +33,7 @@ local function parseGeneration(text)
 	return num
 end
 
--- 🧩 Xác định floor từ model podium
-local function getFloorFromModel(model)
-	if not model or not model:IsA("Model") then return "Unknown Floor" end
-	local num = tonumber(model.Name:match("^(%d+)"))
-	if num then
-		if num >= 1 and num <= 10 then
-			return "1st Floor"
-		elseif num >= 11 and num <= 18 then
-			return "2nd Floor"
-		else
-			return "3rd Floor"
-		end
-	end
-	return "Unknown Floor"
-end
-
--- 🧩 ESP Aura
+-- 🧩 ESP Aura (Highlight)
 local function createAura(model)
 	if not model or not model:IsA("Model") then return end
 	if model.Name == "model" or model.Name == "friendpanel" then return end
@@ -105,64 +84,46 @@ local function createBeam(model)
 	beam.Parent = folder
 end
 
--- 🧩 Overhead hiển thị DisplayName + Generation + Floor
-local function attachOverhead(model, displayText, generationText, floorText)
+-- 🧩 Overhead hiển thị DisplayName + Generation
+local function attachOverhead(model, displayText, generationText)
 	if not model or not model:IsA("Model") then return end
 	if model.Name == "model" or model.Name == "friendpanel" then return end
 
 	local primary = model:FindFirstChildWhichIsA("BasePart") or model.PrimaryPart
 	if not primary then return end
 
-	local gui = primary:FindFirstChild("OverheadGui")
-	if not gui then
-		gui = Instance.new("BillboardGui")
-		gui.Name = "OverheadGui"
-		gui.Adornee = primary
-		gui.Size = UDim2.new(0, 200, 0, 75)
-		gui.StudsOffset = Vector3.new(0, 4, 0)
-		gui.AlwaysOnTop = true
-		gui.Parent = primary
+	local oldGui = primary:FindFirstChild("OverheadGui")
+	if oldGui then oldGui:Destroy() end
 
-		-- DisplayName
-		local nameLabel = Instance.new("TextLabel")
-		nameLabel.Name = "NameLabel"
-		nameLabel.Size = UDim2.new(1, 0, 0.33, 0)
-		nameLabel.BackgroundTransparency = 1
-		nameLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
-		nameLabel.TextScaled = true
-		nameLabel.Font = Enum.Font.GothamBold
-		nameLabel.Parent = gui
+	local gui = Instance.new("BillboardGui")
+	gui.Name = "OverheadGui"
+	gui.Adornee = primary
+	gui.Size = UDim2.new(0, 200, 0, 50)
+	gui.StudsOffset = Vector3.new(0, 4, 0)
+	gui.AlwaysOnTop = true
+	gui.Parent = primary
 
-		-- Generation
-		local genLabel = Instance.new("TextLabel")
-		genLabel.Name = "GenLabel"
-		genLabel.Size = UDim2.new(1, 0, 0.33, 0)
-		genLabel.Position = UDim2.new(0, 0, 0.33, 0)
-		genLabel.BackgroundTransparency = 1
-		genLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
-		genLabel.TextScaled = true
-		genLabel.Font = Enum.Font.GothamSemibold
-		genLabel.Parent = gui
+	local nameLabel = Instance.new("TextLabel")
+	nameLabel.Size = UDim2.new(1, 0, 0.5, 0)
+	nameLabel.BackgroundTransparency = 1
+	nameLabel.Text = displayText
+	nameLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
+	nameLabel.TextScaled = true
+	nameLabel.Font = Enum.Font.GothamBold
+	nameLabel.Parent = gui
 
-		-- Floor
-		local floorLabel = Instance.new("TextLabel")
-		floorLabel.Name = "FloorLabel"
-		floorLabel.Size = UDim2.new(1, 0, 0.33, 0)
-		floorLabel.Position = UDim2.new(0, 0, 0.66, 0)
-		floorLabel.BackgroundTransparency = 1
-		floorLabel.TextColor3 = Color3.fromRGB(0, 150, 255)
-		floorLabel.TextScaled = true
-		floorLabel.Font = Enum.Font.GothamSemibold
-		floorLabel.Parent = gui
-	end
-
-	-- Update text liên tục
-	gui.NameLabel.Text = displayText
-	gui.GenLabel.Text = generationText
-	gui.FloorLabel.Text = floorText or "Unknown Floor"
+	local genLabel = Instance.new("TextLabel")
+	genLabel.Size = UDim2.new(1, 0, 0.5, 0)
+	genLabel.Position = UDim2.new(0, 0, 0.5, 0)
+	genLabel.BackgroundTransparency = 1
+	genLabel.Text = generationText
+	genLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+	genLabel.TextScaled = true
+	genLabel.Font = Enum.Font.GothamSemibold
+	genLabel.Parent = gui
 end
 
--- 🧩 Kiểm tra plot bị chặn
+-- 🧩 Kiểm tra plot có bị chặn không (linh hoạt, đa ngôn ngữ)
 local function isPlotBlocked(plot)
 	local plotSign = plot:FindFirstChild("PlotSign")
 	if not plotSign then return false end
@@ -181,10 +142,11 @@ local function isPlotBlocked(plot)
 	return false
 end
 
--- 🧩 Xử lý plot liên tục
+-- 🧩 Xử lý từng plot
 local function processPlots()
 	for _, plot in pairs(Workspace:WaitForChild("Plots"):GetChildren()) do
 		if isPlotBlocked(plot) then
+			print("⛔ Bỏ qua plot:", plot.Name)
 			continue
 		end
 
@@ -200,27 +162,37 @@ local function processPlots()
 						local generation = overhead:FindFirstChild("Generation")
 
 						if displayName and generation and displayName:IsA("TextLabel") and generation:IsA("TextLabel") then
-							local targetName = displayName.Text
 							local genValue = parseGeneration(generation.Text)
-
-							-- Kiểm tra bỏ qua generation nếu model trong ALWAYS_ESP_MODELS
-							local ignoreGen = false
-							for _, name in pairs(ALWAYS_ESP_MODELS) do
-								if targetName == name then
-									ignoreGen = true
-									break
-								end
-							end
-
-							if genValue > 10_000_000 or ignoreGen then
+							if genValue > 10_000_000 then
+								local targetName = displayName.Text
 								for _, model in pairs(plot:GetChildren()) do
 									if model:IsA("Model") and model.Name == targetName then
-										local floor = getFloorFromModel(podium)
 										createAura(model)
 										createBeam(model)
-										attachOverhead(model, displayName.Text, generation.Text, floor)
+										attachOverhead(model, displayName.Text, generation.Text)
 									end
 								end
 							end
 						end
 					end
+				end
+			end
+		end
+	end
+end
+
+-- 🧩 Theo dõi plot thêm mới
+Workspace.Plots.ChildAdded:Connect(function()
+	task.wait(1)
+	processPlots()
+end)
+
+for _, plot in pairs(Workspace.Plots:GetChildren()) do
+	plot.ChildAdded:Connect(function()
+		task.wait(1)
+		processPlots()
+	end)
+end
+
+processPlots()
+print("✅ ESP hệ thống hoạt động (lọc >10M/s, lọc model/friendpanel, lọc plot đa ngôn ngữ).")
